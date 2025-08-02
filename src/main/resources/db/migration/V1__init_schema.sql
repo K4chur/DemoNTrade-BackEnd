@@ -1,0 +1,80 @@
+-- INITIAL MIGRATION FOR BASIC SCHEMA
+-- USERS TABLE CREATION
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- PROFILES TABLE CREATION
+CREATE TABLE profiles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    initial_balance DECIMAL(12,2) NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ASSETS TABLE CREATION
+CREATE TABLE assets (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    symbol VARCHAR(20) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    type ENUM('STOCK', 'FOREX', 'CRYPTO') NOT NULL,
+    currency VARCHAR(10),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- PRICE HISTORY TABLE CREATION
+CREATE TABLE price_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asset_id BIGINT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    open_price DECIMAL(12,4),
+    close_price DECIMAL(12,4),
+    high_price DECIMAL(12,4),
+    low_price DECIMAL(12,4),
+    volume DECIMAL(18,4),
+    FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE,
+    UNIQUE(asset_id, timestamp)
+);
+
+-- TRADES TABLE CREATION
+CREATE TABLE trades (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    profile_id BIGINT NOT NULL,
+    asset_id BIGINT NOT NULL,
+    open_time DATETIME NOT NULL,
+    close_time DATETIME,
+    direction ENUM('BUY', 'SELL') NOT NULL,
+    entry_price DECIMAL(12,4) NOT NULL,
+    exit_price DECIMAL(12,4),
+    quantity DECIMAL(12,4) NOT NULL,
+    result DECIMAL(12,4),
+    strategy_note TEXT,
+    FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
+    FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+);
+
+-- LLM CHAT SESSIONS TABLE CREATION
+CREATE TABLE llm_chat_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    profile_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    title VARCHAR(255),
+    FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+);
+
+-- LLM MESSAGES TABLE CREATION
+CREATE TABLE llm_messages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    sender ENUM('USER', 'LLM') NOT NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES llm_chat_sessions(id) ON DELETE CASCADE
+);
